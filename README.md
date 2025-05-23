@@ -49,3 +49,35 @@ var token = await auth.GetTokenAsync();
 var deviceService = new CrowdStrikeDeviceService(auth);
 var deviceIds = await deviceService.GetDeviceIdsAsync();
 var devices = await deviceService.GetDeviceDetailsAsync(deviceIds);
+```
+
+---
+
+## 📦 Install
+
+This project is not yet published to NuGet. To use it locally:
+
+```bash
+dotnet add package ZentrixLabs.FalconSdk --source ./bin/Release
+```
+
+Or build manually:
+
+```bash
+dotnet build
+dotnet pack -c Release
+```
+
+---
+
+## 🧪 Test Coverage
+
+Test project and CI coverage coming soon.
+
+---
+
+## 📝 License
+
+MIT © [ZentrixLabs](https://github.com/ZentrixLabs)
+
+Contributions welcome. Open a PR or issue if you find bugs or want to extend support.
