@@ -1,5 +1,10 @@
 # ZentrixLabs.FalconSdk
 
+[![NuGet](https://img.shields.io/nuget/v/ZentrixLabs.FalconSdk.svg)](https://www.nuget.org/packages/ZentrixLabs.FalconSdk/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/ZentrixLabs.FalconSdk.svg)](https://www.nuget.org/packages/ZentrixLabs.FalconSdk/)
+
+---
+
 A lightweight, MIT-licensed .NET 9 SDK for querying CrowdStrike Falcon data using their OAuth2 API.
 
 > This SDK is designed to simplify local telemetry analysis, patch readiness, and device visibility by abstracting Falcon's token and device API interactions.
@@ -7,6 +12,8 @@ A lightweight, MIT-licensed .NET 9 SDK for querying CrowdStrike Falcon data usin
 ---
 
 ## ✨ Features
+
+---
 
 ✅ Supports:
 - OAuth2 token generation from API keys  
@@ -23,6 +30,8 @@ A lightweight, MIT-licensed .NET 9 SDK for querying CrowdStrike Falcon data usin
 
 ## 🛠 Requirements
 
+---
+
 You need:
 - A CrowdStrike Falcon API key with the following permissions:
   - **Hosts: Read**
@@ -35,6 +44,8 @@ From the Falcon console:
 ---
 
 ## 🔐 Example: Basic Usage
+
+---
 
 ```csharp
 var options = new CrowdStrikeOptions
@@ -53,33 +64,50 @@ var devices = await deviceService.GetDeviceDetailsAsync(deviceIds);
 
 ---
 
-## 📦 Install
+## 📦 Install from NuGet
 
-This project is not yet published to NuGet. To use it locally:
-
-```bash
-dotnet add package ZentrixLabs.FalconSdk --source ./bin/Release
-```
-
-Or build manually:
+---
 
 ```bash
-dotnet build
-dotnet pack -c Release
+dotnet add package ZentrixLabs.FalconSdk
 ```
-The `.nupkg` file will appear in `./bin/Release` for local installation.
+
+[View on NuGet.org](https://www.nuget.org/packages/ZentrixLabs.FalconSdk/)
 
 ---
 
 ## 🧪 Test Coverage
 
-No unit tests are currently included.  
-Developers are welcome to add tests using xUnit and reference the SDK as needed.
+---
+
+This SDK is currently distributed without bundled unit tests.  
+Community contributions are encouraged — feel free to fork and add coverage using xUnit.
 
 ---
 
 ## 📝 License
 
+---
+
+This project is licensed under the [MIT License](LICENSE).  
+You are free to use, modify, and distribute it — including in commercial products — with attribution.
+
+---
+
+## 🌐 More from ZentrixLabs
+
+Explore our tools, apps, and developer blog at [zentrixlabs.net](https://zentrixlabs.net)
+
+---
+
 MIT © [ZentrixLabs](https://github.com/ZentrixLabs/ZentrixLabs.FalconSdk)
 
-Contributions welcome. Open a PR or issue if you find bugs or want to extend support.
+
+## Contributing
+Pull requests are welcome!  
+Please fork the repository, make your changes, and submit a pull request.  
+Ensure changes are well-tested and match the project's security-first standards.
+
+If you'd like to support this project:
+
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/default-orange.png)](https://www.buymeacoffee.com/Mainframe79)
