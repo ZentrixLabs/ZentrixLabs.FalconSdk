@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>ZentrixLabs.FalconSdk</PackageId>
-    <Version>1.0.0</Version>
+    <Version>$(PackageVersion)</Version>
     <Authors>ZentrixLabs</Authors>
     <Company>ZentrixLabs</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
