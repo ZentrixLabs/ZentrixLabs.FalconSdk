@@ -8,12 +8,21 @@ using ZentrixLabs.FalconSdk.Options;
 
 namespace ZentrixLabs.FalconSdk.Services;
 
+/// <summary>
+/// Provides methods to retrieve server device information from the CrowdStrike Falcon API.
+/// </summary>
 public class CrowdStrikeDeviceService
 {
     private readonly HttpClient _httpClient;
     private readonly CrowdStrikeAuthService _authService;
     private readonly CrowdStrikeOptions _options;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CrowdStrikeDeviceService"/> class.
+    /// </summary>
+    /// <param name="httpClient">The HTTP client instance configured for Falcon API access.</param>
+    /// <param name="authService">The authentication service for obtaining access tokens.</param>
+    /// <param name="options">The configuration options for CrowdStrike API endpoints.</param>
     public CrowdStrikeDeviceService(
         HttpClient httpClient,
         CrowdStrikeAuthService authService,
@@ -27,6 +36,10 @@ public class CrowdStrikeDeviceService
 
 
 
+    /// <summary>
+    /// Retrieves a filtered list of server and domain controller devices from CrowdStrike Falcon.
+    /// </summary>
+    /// <returns>A list of <see cref="DeviceDetail"/> representing server devices.</returns>
     public async Task<List<DeviceDetail>> GetAllServerDevicesAsync()
     {
         var accessToken = await _authService.GetAccessTokenAsync();
@@ -66,7 +79,7 @@ public class CrowdStrikeDeviceService
             var filtered = detailData?.Resources
                 ?.Where(d => d.ProductType == "2" || d.ProductType == "3" ||
                              validTypes.Contains(d.ProductTypeDesc?.Trim(), StringComparer.OrdinalIgnoreCase))
-                .ToList() ?? [];
+                .ToList() ?? new List<DeviceDetail>();
 
             allDevices.AddRange(filtered);
         }

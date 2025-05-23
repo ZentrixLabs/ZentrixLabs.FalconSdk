@@ -78,6 +78,6 @@ Test project and CI coverage coming soon.
 
 ## 📝 License
 
-MIT © [ZentrixLabs](https://github.com/ZentrixLabs)
+MIT © [ZentrixLabs](https://github.com/ZentrixLabs/ZentrixLabs.FalconSdk)
 
 Contributions welcome. Open a PR or issue if you find bugs or want to extend support.

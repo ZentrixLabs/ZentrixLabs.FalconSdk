@@ -5,6 +5,9 @@ using System.Net.Http.Json;
 
 namespace ZentrixLabs.FalconSdk.Services;
 
+/// <summary>
+/// Handles authentication and token management for the CrowdStrike Falcon API.
+/// </summary>
 public class CrowdStrikeAuthService
 {
     private readonly HttpClient _httpClient;
@@ -12,12 +15,22 @@ public class CrowdStrikeAuthService
     private string? _accessToken;
     private DateTime _expiresAt;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CrowdStrikeAuthService"/> class.
+    /// </summary>
+    /// <param name="httpClient">The HTTP client instance used to make requests.</param>
+    /// <param name="options">The options containing CrowdStrike credentials and endpoint base URL.</param>
     public CrowdStrikeAuthService(HttpClient httpClient, IOptions<CrowdStrikeOptions> options)
     {
         _httpClient = httpClient;
         _options = options.Value;
     }
 
+    /// <summary>
+    /// Retrieves a valid access token for the CrowdStrike Falcon API, reusing the cached token if not expired.
+    /// </summary>
+    /// <returns>The OAuth2 access token as a string.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when a token cannot be retrieved from the API.</exception>
     public async Task<string> GetAccessTokenAsync()
     {
         if (!string.IsNullOrEmpty(_accessToken) && DateTime.UtcNow < _expiresAt)
