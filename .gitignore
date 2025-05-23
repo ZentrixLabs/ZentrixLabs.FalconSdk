@@ -1,2 +1,15 @@
 /obj
+/bin
+/Debug
+/Release
+/DebugSymbols
+/DebugSymbols
+/DebugSymbols/Debug
+/DebugSymbols/Release
+/DebugSymbols/ReleaseSymbols
+/DebugSymbols/ReleaseSymbols
+/DebugSymbols/DebugSymbols
+/DebugSymbols/DebugSymbols
+/DebugSymbols/DebugSymbols/Debug
+/DebugSymbols/DebugSymbols/DebugSymbols
 .DS_Store
