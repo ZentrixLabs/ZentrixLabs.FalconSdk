@@ -100,7 +100,7 @@ Explore our tools, apps, and developer blog at [zentrixlabs.net](https://zentrix
 
 ---
 
-MIT © [ZentrixLabs](https://github.com/ZentrixLabs/ZentrixLabs.FalconSdk)
+Licensed under the [MIT License](LICENSE) by ZentrixLabs.
 
 
 ## Contributing
