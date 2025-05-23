@@ -1,4 +1,4 @@
-﻿namespace ZentrixLabs.FalconSdk.Options;
+﻿namespace ZentrixLabs.FalconSdk.Congiguration;
 
 /// <summary>
 /// Configuration options for connecting to the CrowdStrike Falcon API.

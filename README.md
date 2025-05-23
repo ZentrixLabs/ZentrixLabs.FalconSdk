@@ -16,8 +16,8 @@ A lightweight, MIT-licensed .NET 9 SDK for querying CrowdStrike Falcon data usin
 🚧 Not yet implemented:
 - Streaming detections or real-time event subscriptions  
 - Threat Graph, incidents, or host group mutations  
-- SDK-wide retry logic or circuit breakers  
-- Structured logging or metrics
+- Retry logic or circuit breaker support  
+- Built-in structured logging or telemetry
 
 ---
 
@@ -67,12 +67,14 @@ Or build manually:
 dotnet build
 dotnet pack -c Release
 ```
+The `.nupkg` file will appear in `./bin/Release` for local installation.
 
 ---
 
 ## 🧪 Test Coverage
 
-Test project and CI coverage coming soon.
+No unit tests are currently included.  
+Developers are welcome to add tests using xUnit and reference the SDK as needed.
 
 ---
 

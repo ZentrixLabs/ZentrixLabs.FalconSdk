@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using ZentrixLabs.FalconSdk.Models;
-using ZentrixLabs.FalconSdk.Options;
+using ZentrixLabs.FalconSdk.Congiguration;
 
 namespace ZentrixLabs.FalconSdk.Services;
 
