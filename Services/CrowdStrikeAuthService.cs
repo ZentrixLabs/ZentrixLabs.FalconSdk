@@ -38,7 +38,9 @@ public class CrowdStrikeAuthService
             return _accessToken!;
         }
 
-        var request = new HttpRequestMessage(HttpMethod.Post, $"{_options.BaseUrl}/oauth2/token")
+        var baseUrl = _options.BaseUrl?.TrimEnd('/');
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/oauth2/token")
         {
             Content = new FormUrlEncodedContent(new Dictionary<string, string>
             {
@@ -60,7 +62,8 @@ public class CrowdStrikeAuthService
         }
 
         _accessToken = result.AccessToken;
-        _expiresAt = DateTime.UtcNow.AddSeconds(result.ExpiresIn - 60); // buffer
+        var expiresIn = result.ExpiresIn > 0 ? result.ExpiresIn : 300; // default to 5 minutes
+        _expiresAt = DateTime.UtcNow.AddSeconds(expiresIn - 60); // buffer
 
         return _accessToken!;
     }

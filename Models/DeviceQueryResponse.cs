@@ -3,7 +3,8 @@
 namespace ZentrixLabs.FalconSdk.Models;
 
 /// <summary>
-/// Represents the response from a CrowdStrike Falcon device query request.
+/// Describes the structure of a Falcon device query response.
+/// All fields are optional and may be null or missing depending on the API response.
 /// </summary>
 public class DeviceQueryResponse
 {
@@ -15,13 +16,15 @@ public class DeviceQueryResponse
 
     /// <summary>
     /// Optional error information returned by the API.
+    /// Use with caution — structure is loosely defined.
     /// </summary>
     [JsonPropertyName("errors")]
-    public List<object>? Errors { get; set; }
+    public object? Errors { get; set; }
 
     /// <summary>
     /// Metadata associated with the query response.
+    /// May contain pagination or query diagnostics.
     /// </summary>
     [JsonPropertyName("meta")]
-    public Dictionary<string, object>? Meta { get; set; }
+    public object? Meta { get; set; }
 }

@@ -346,6 +346,7 @@ public class DeviceDetail
 
 /// <summary>
 /// Represents the top-level response envelope containing device detail results and any associated errors.
+/// Falcon may return partial structures or nulls depending on the query context.
 /// </summary>
 public class DeviceDetailEnvelope
 {
@@ -357,6 +358,7 @@ public class DeviceDetailEnvelope
 
     /// <summary>
     /// A list of errors encountered during the API request, if any.
+    /// This is loosely structured and may contain untyped details.
     /// </summary>
     [JsonPropertyName("errors")]
     public List<object>? Errors { get; set; }

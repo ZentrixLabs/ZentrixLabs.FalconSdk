@@ -1,4 +1,6 @@
-﻿namespace ZentrixLabs.FalconSdk.Congiguration;
+﻿using System;
+
+namespace ZentrixLabs.FalconSdk.Configuration;
 
 /// <summary>
 /// Configuration options for connecting to the CrowdStrike Falcon API.
@@ -19,4 +21,23 @@ public class CrowdStrikeOptions
     /// The client secret used for OAuth2 authentication.
     /// </summary>
     public string ClientSecret { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Validates that required configuration fields are set correctly.
+    /// Throws ArgumentException if any are missing or malformed.
+    /// </summary>
+    public void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(BaseUrl))
+            throw new ArgumentException("BaseUrl must be provided.");
+
+        if (!BaseUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("BaseUrl must use HTTPS.");
+
+        if (string.IsNullOrWhiteSpace(ClientId))
+            throw new ArgumentException("ClientId must be provided.");
+
+        if (string.IsNullOrWhiteSpace(ClientSecret))
+            throw new ArgumentException("ClientSecret must be provided.");
+    }
 }

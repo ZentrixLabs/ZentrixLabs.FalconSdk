@@ -4,6 +4,7 @@ namespace ZentrixLabs.FalconSdk.Models;
 
 /// <summary>
 /// Represents the response payload returned by the CrowdStrike Falcon token endpoint.
+/// Includes bearer token and expiration metadata. Values may be missing in case of API drift or error.
 /// </summary>
 public class CrowdStrikeTokenResponse
 {
@@ -14,7 +15,8 @@ public class CrowdStrikeTokenResponse
     public string AccessToken { get; set; } = string.Empty;
 
     /// <summary>
-    /// The duration in seconds until the token expires.
+    /// The duration in seconds until the token expires. May be zero or omitted in edge cases.
+    /// Consumers should apply a fallback if this value is less than or equal to zero.
     /// </summary>
     [JsonPropertyName("expires_in")]
     public int ExpiresIn { get; set; }

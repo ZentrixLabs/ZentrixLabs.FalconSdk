@@ -17,6 +17,9 @@ public class CrowdStrikeDeviceService
     private readonly CrowdStrikeAuthService _authService;
     private readonly CrowdStrikeOptions _options;
 
+    private const string ServerTypeCode = "2";
+    private const string DomainControllerTypeCode = "3";
+
     /// <summary>
     /// Initializes a new instance of the <see cref="CrowdStrikeDeviceService"/> class.
     /// </summary>
@@ -72,12 +75,16 @@ public class CrowdStrikeDeviceService
             detailResponse.EnsureSuccessStatusCode();
 
             var rawJson = await detailResponse.Content.ReadAsStringAsync();
-            var detailData = JsonSerializer.Deserialize<DeviceDetailEnvelope>(rawJson);
+            var detailData = JsonSerializer.Deserialize<DeviceDetailEnvelope>(
+                rawJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
+            // Filters to include only servers or domain controllers
+            // ProductType "2" = Server, "3" = Domain Controller
             var validTypes = new[] { "Server", "Domain Controller" };
 
             var filtered = detailData?.Resources
-                ?.Where(d => d.ProductType == "2" || d.ProductType == "3" ||
+                ?.Where(d => d.ProductType == ServerTypeCode || d.ProductType == DomainControllerTypeCode ||
                              validTypes.Contains(d.ProductTypeDesc?.Trim(), StringComparer.OrdinalIgnoreCase))
                 .ToList() ?? new List<DeviceDetail>();
 
