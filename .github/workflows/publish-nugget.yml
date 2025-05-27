@@ -6,8 +6,11 @@ on:
       - 'v*.*.*' # Triggers on version tags like v1.0.0
 
 jobs:
-  build-and-publish:
-    runs-on: ubuntu-latest
+  build-sign-publish:
+    runs-on: windows-latest
+    env:
+      SIGN_CODE: true
+
     steps:
       - uses: actions/checkout@v4
 
@@ -24,8 +27,55 @@ jobs:
 
       - name: Pack
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          dotnet pack --configuration Release --no-build --output ./nupkgs -p:PackageVersion=$VERSION
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          dotnet pack --configuration Release --no-build --output ./nupkgs -p:PackageVersion=$version
+        shell: pwsh
+
+      - name: Get .nupkg path
+        id: locate_nupkg
+        shell: pwsh
+        run: |
+          $pkg = Get-ChildItem -Path "./nupkgs" -Filter "ZentrixLabs.FalconSdk.*.nupkg" | Select-Object -First 1
+          echo "Found: $($pkg.FullName)"
+          echo "nupkg_path=$($pkg.FullName)" >> $env:GITHUB_OUTPUT
+
+      - name: Create temp directory for signed output
+        run: New-Item -ItemType Directory -Force -Path "nupkgs-signed"
+        shell: powershell
+
+      - name: Sign .nupkg file (SSL.com eSigner)
+        if: env.SIGN_CODE == 'true'
+        uses: sslcom/esigner-codesign@develop
+        with:
+          command: sign
+          username: ${{ secrets.CODESIGN_USERNAME }}
+          password: ${{ secrets.CODESIGN_PASSWORD }}
+          credential_id: ${{ secrets.CODESIGN_CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.CODESIGN_TOTP_SECRET }}
+          file_path: ${{ steps.locate_nupkg.outputs.nupkg_path }}
+          output_path: ./nupkgs-signed
+          environment_name: PROD
+          signing_method: v2
+          malware_block: false
+        timeout-minutes: 10
+
+      - name: Replace original .nupkg with signed version
+        shell: pwsh
+        run: |
+          $signed = Get-ChildItem -Path "./nupkgs-signed" -Filter "*.nupkg" -Recurse | Select-Object -First 1
+          if (-not $signed) {
+            Write-Error "Signed .nupkg not found"
+            exit 1
+          }
+          Copy-Item -Path $signed.FullName -Destination "./nupkgs/" -Force
+          Get-ChildItem -Path "./nupkgs" -Filter "*.nupkg"
 
       - name: Push to NuGet
-        run: dotnet nuget push ./nupkgs/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+        shell: pwsh
+        run: |
+          $pkg = Get-ChildItem -Path "./nupkgs" -Filter "*.nupkg" | Select-Object -First 1
+          if (-not $pkg) {
+            Write-Error "No .nupkg file found to publish"
+            exit 1
+          }
+          dotnet nuget push $pkg.FullName --source https://api.nuget.org/v3/index.json --api-key "${{ secrets.NUGET_API_KEY }}"
