@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using ZentrixLabs.FalconSdk.Models;
-using ZentrixLabs.FalconSdk.Congiguration;
+using ZentrixLabs.FalconSdk.Configuration;
 using System.Net.Http.Json;
 
 namespace ZentrixLabs.FalconSdk.Services;
