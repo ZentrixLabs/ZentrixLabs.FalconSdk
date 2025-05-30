@@ -17,8 +17,14 @@ A lightweight, MIT-licensed .NET 9 SDK for querying CrowdStrike Falcon data usin
 
 ✅ Supports:
 - OAuth2 token generation from API keys  
-- Device query API (`/devices/queries/devices/v1`)  
-- Device detail API (`/devices/entities/devices/v2`)  
+
+- 🔌 Supported API Endpoints
+**Purpose**                |	**Falcon API Endpoint**
+Device search              |	/devices/queries/devices/v1
+Device details             |	/devices/entities/devices/v2
+Host groups                |	/devices/entities/host-groups/v1
+Vulnerabilities by filter  |	/spotlight/queries/vulnerabilities/v1  
+Vulnerabilities by ID      |	/spotlight/entities/vulnerabilities/v1
 
 🚧 Not yet implemented:
 - Streaming detections or real-time event subscriptions  
@@ -36,7 +42,18 @@ You need:
 - A CrowdStrike Falcon API key with the following permissions:
   - **Hosts: Read**
   - **Host Groups: Read**
+  - **Assets: Read**
+  - **Vulnerabilities: Read**
 
+You can create an API key with these permissions in the Falcon console
+
+## 🛠️ Notes
+- Pagination: Some endpoints (e.g., devices/queries) require handling of scroll tokens for pagination.
+  - Example: `/devices/queries/devices-scroll/v1?filter=hostname:'<devicename>'` for paginated device queries.
+  
+- The user creating the key must have the necessary permissions to grant these scopes (Vulnerability Manager, Device Control, etc.)
+
+## 🔑 Setting Up Your API Key
 From the Falcon console:
 - Go to **Support > API Clients and Keys**
 - Create a new key and grant the above permissions
