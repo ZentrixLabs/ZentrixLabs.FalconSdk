@@ -93,4 +93,56 @@ public class CrowdStrikeDeviceService
 
         return allDevices;
     }
+
+    /// <summary>
+    /// Retrieves device IDs (AIDs) that match a given hostname.
+    /// </summary>
+    /// <param name="hostname">The hostname to search for.</param>
+    /// <returns>A list of device IDs (AIDs) matching the hostname.</returns>
+    public async Task<List<string>> GetDeviceIdsAsync(string hostname)
+    {
+        var accessToken = await _authService.GetAccessTokenAsync();
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var deviceIds = new List<string>();
+        int offset = 0;
+        const int pageSize = 100;
+
+        while (true)
+        {
+            var url = $"{_options.BaseUrl}/devices/queries/devices/v1?limit={pageSize}&offset={offset}&filter=hostname:'{hostname}'";
+            var response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var data = await response.Content.ReadFromJsonAsync<DeviceQueryResponse>();
+            if (data?.Resources == null || data.Resources.Count == 0)
+                break;
+
+            deviceIds.AddRange(data.Resources);
+            offset += pageSize;
+        }
+
+        return deviceIds;
+    }
+
+    /// <summary>
+    /// Retrieves detailed device information for a given device ID (AID).
+    /// </summary>
+    /// <param name="aid">The device ID (AID) to retrieve details for.</param>
+    /// <returns>A <see cref="DeviceDetail"/> object representing the device, or null if not found.</returns>
+    public async Task<DeviceDetail?> GetDeviceDetailsAsync(string aid)
+    {
+        var accessToken = await _authService.GetAccessTokenAsync();
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var url = $"{_options.BaseUrl}/devices/entities/devices/v2?ids={aid}";
+        var response = await _httpClient.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+
+        var detailData = await response.Content.ReadFromJsonAsync<DeviceDetailEnvelope>();
+
+        return detailData?.Resources?.FirstOrDefault();
+    }
+
+
 }
