@@ -19,12 +19,15 @@ A lightweight, MIT-licensed .NET 9 SDK for querying CrowdStrike Falcon data usin
 - OAuth2 token generation from API keys  
 
 - 🔌 Supported API Endpoints
-**Purpose**                |	**Falcon API Endpoint**
-Device search              |	/devices/queries/devices/v1
-Device details             |	/devices/entities/devices/v2
-Host groups                |	/devices/entities/host-groups/v1
-Vulnerabilities by filter  |	/spotlight/queries/vulnerabilities/v1  
-Vulnerabilities by ID      |	/spotlight/entities/vulnerabilities/v1
+
+| **Purpose**               | **Falcon API Endpoint**                              |
+|---------------------------|------------------------------------------------------|
+| Device search             | `/devices/queries/devices/v1`                        |
+| Device details            | `/devices/entities/devices/v2`                       |
+| Host groups               | `/devices/entities/host-groups/v1`                   |
+| Vulnerabilities by filter | `/spotlight/queries/vulnerabilities/v1`              |
+| Vulnerabilities by ID     | `/spotlight/entities/vulnerabilities/v1`             |
+
 
 🚧 Not yet implemented:
 - Streaming detections or real-time event subscriptions  
