@@ -122,11 +122,20 @@ Explore our tools, apps, and developer blog at [zentrixlabs.net](https://zentrix
 
 Licensed under the [MIT License](LICENSE) by ZentrixLabs.
 
+## 🙏 Acknowledgments
+
+- This SDK would not have been possible without the work already done by the team behind the [PSFalcon](https://github.com/CrowdStrike/psfalcon) module and the Falcon SDK.
+
+We extend our thanks to the CrowdStrike API community for their support and documentation.
+---
 
 ## Contributing
 Pull requests are welcome!  
 Please fork the repository, make your changes, and submit a pull request.  
 Ensure changes are well-tested and match the project's security-first standards.
+
+This Sdk will continue to evolve to encompass more features and services from the CrowdStrike Falcon API.
+
 
 If you'd like to support this project:
 

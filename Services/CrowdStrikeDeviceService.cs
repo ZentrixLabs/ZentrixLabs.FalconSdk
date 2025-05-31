@@ -1,148 +1,167 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using ZentrixLabs.FalconSdk.Models;
 using ZentrixLabs.FalconSdk.Configuration;
 
-namespace ZentrixLabs.FalconSdk.Services;
-
-/// <summary>
-/// Provides methods to retrieve server device information from the CrowdStrike Falcon API.
-/// </summary>
-public class CrowdStrikeDeviceService
+namespace ZentrixLabs.FalconSdk.Services
 {
-    private readonly HttpClient _httpClient;
-    private readonly CrowdStrikeAuthService _authService;
-    private readonly CrowdStrikeOptions _options;
-
-    private const string ServerTypeCode = "2";
-    private const string DomainControllerTypeCode = "3";
-
     /// <summary>
-    /// Initializes a new instance of the <see cref="CrowdStrikeDeviceService"/> class.
+    /// Provides methods to retrieve server device information from the CrowdStrike Falcon API.
     /// </summary>
-    /// <param name="httpClient">The HTTP client instance configured for Falcon API access.</param>
-    /// <param name="authService">The authentication service for obtaining access tokens.</param>
-    /// <param name="options">The configuration options for CrowdStrike API endpoints.</param>
-    public CrowdStrikeDeviceService(
-        HttpClient httpClient,
-        CrowdStrikeAuthService authService,
-        IOptions<CrowdStrikeOptions> options)
+    public class CrowdStrikeDeviceService
     {
-        _httpClient = httpClient;
-        _authService = authService;
-        _options = options.Value;
-    }
+        private readonly HttpClient _httpClient;
+        private readonly CrowdStrikeAuthService _authService;
+        private readonly CrowdStrikeOptions _options;
 
+        private const string ServerTypeCode = "2";
+        private const string DomainControllerTypeCode = "3";
 
-
-
-    /// <summary>
-    /// Retrieves a filtered list of server and domain controller devices from CrowdStrike Falcon.
-    /// </summary>
-    /// <returns>A list of <see cref="DeviceDetail"/> representing server devices.</returns>
-    public async Task<List<DeviceDetail>> GetAllServerDevicesAsync()
-    {
-        var accessToken = await _authService.GetAccessTokenAsync();
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-        var allDeviceIds = new List<string>();
-        int offset = 0;
-        const int pageSize = 500;
-
-        while (true)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CrowdStrikeDeviceService"/> class.
+        /// </summary>
+        /// <param name="httpClient">The HTTP client used for API requests.</param>
+        /// <param name="authService">The authentication service for obtaining access tokens.</param>
+        /// <param name="options">The configuration options for CrowdStrike API.</param>
+        public CrowdStrikeDeviceService(
+            HttpClient httpClient,
+            CrowdStrikeAuthService authService,
+            IOptions<CrowdStrikeOptions> options)
         {
-            var idResponse = await _httpClient.GetAsync($"{_options.BaseUrl}/devices/queries/devices/v1?limit={pageSize}&offset={offset}&sort=last_seen.desc");
-            idResponse.EnsureSuccessStatusCode();
-
-            var idData = await idResponse.Content.ReadFromJsonAsync<DeviceQueryResponse>();
-            if (idData?.Resources == null || idData.Resources.Count == 0)
-                break;
-
-            allDeviceIds.AddRange(idData.Resources);
-            offset += pageSize;
+            _httpClient = httpClient;
+            _authService = authService;
+            _options = options.Value;
         }
 
-        var allDevices = new List<DeviceDetail>();
-        const int chunkSize = 100;
-
-        foreach (var chunk in allDeviceIds.Chunk(chunkSize))
+        /// <summary>
+        /// Retrieves a filtered list of server and domain controller devices from CrowdStrike Falcon.
+        /// </summary>
+        public async Task<List<DeviceDetail>> GetAllServerDevicesAsync()
         {
-            var idParams = string.Join("&ids=", chunk);
-            var detailResponse = await _httpClient.GetAsync($"{_options.BaseUrl}/devices/entities/devices/v2?ids={idParams}");
-            detailResponse.EnsureSuccessStatusCode();
+            var accessToken = await _authService.GetAccessTokenAsync();
 
-            var rawJson = await detailResponse.Content.ReadAsStringAsync();
-            var detailData = JsonSerializer.Deserialize<DeviceDetailEnvelope>(
-                rawJson,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var allDeviceIds = new List<string>();
+            int offset = 0;
+            const int pageSize = 500;
 
-            // Filters to include only servers or domain controllers
-            // ProductType "2" = Server, "3" = Domain Controller
-            var validTypes = new[] { "Server", "Domain Controller" };
+            while (true)
+            {
+                var idUrl = $"{_options.BaseUrl}/devices/queries/devices/v1?limit={pageSize}&offset={offset}&sort=last_seen.desc";
+                var idRequest = new HttpRequestMessage(HttpMethod.Get, idUrl);
+                idRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-            var filtered = detailData?.Resources
-                ?.Where(d => d.ProductType == ServerTypeCode || d.ProductType == DomainControllerTypeCode ||
-                             validTypes.Contains(d.ProductTypeDesc?.Trim(), StringComparer.OrdinalIgnoreCase))
-                .ToList() ?? new List<DeviceDetail>();
+                var idResponse = await _httpClient.SendAsync(idRequest);
+                idResponse.EnsureSuccessStatusCode();
 
-            allDevices.AddRange(filtered);
+                var idData = await idResponse.Content.ReadFromJsonAsync<DeviceQueryResponse>();
+                if (idData?.Resources == null || idData.Resources.Count == 0)
+                    break;
+
+                allDeviceIds.AddRange(idData.Resources);
+                offset += pageSize;
+            }
+
+            var allDevices = new List<DeviceDetail>();
+            const int chunkSize = 100;
+
+            foreach (var chunk in allDeviceIds.Chunk(chunkSize))
+            {
+                var idParams = string.Join("&ids=", chunk);
+                var detailUrl = $"{_options.BaseUrl}/devices/entities/devices/v2?ids={idParams}";
+                var detailRequest = new HttpRequestMessage(HttpMethod.Get, detailUrl);
+                detailRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                var detailResponse = await _httpClient.SendAsync(detailRequest);
+                detailResponse.EnsureSuccessStatusCode();
+
+                var rawJson = await detailResponse.Content.ReadAsStringAsync();
+                var detailData = JsonSerializer.Deserialize<DeviceDetailEnvelope>(
+                    rawJson,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                var validTypes = new[] { "Server", "Domain Controller" };
+                var filtered = detailData?.Resources
+                    ?.Where(d => d.ProductType == ServerTypeCode || d.ProductType == DomainControllerTypeCode ||
+                                 validTypes.Contains(d.ProductTypeDesc?.Trim(), StringComparer.OrdinalIgnoreCase))
+                    .ToList() ?? new List<DeviceDetail>();
+
+                allDevices.AddRange(filtered);
+            }
+
+            return allDevices;
         }
 
-        return allDevices;
-    }
-
-    /// <summary>
-    /// Retrieves device IDs (AIDs) that match a given hostname.
-    /// </summary>
-    /// <param name="hostname">The hostname to search for.</param>
-    /// <returns>A list of device IDs (AIDs) matching the hostname.</returns>
-    public async Task<List<string>> GetDeviceIdsAsync(string hostname)
-    {
-        var accessToken = await _authService.GetAccessTokenAsync();
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-        var deviceIds = new List<string>();
-        int offset = 0;
-        const int pageSize = 100;
-
-        while (true)
+        /// <summary>
+        /// Retrieves device IDs (AIDs) that match a given hostname.
+        /// </summary>
+        public async Task<List<string>> GetDeviceIdsAsync(string hostname)
         {
-            var url = $"{_options.BaseUrl}/devices/queries/devices/v1?limit={pageSize}&offset={offset}&filter=hostname:'{hostname}'";
-            var response = await _httpClient.GetAsync(url);
-            response.EnsureSuccessStatusCode();
+            var accessToken = await _authService.GetAccessTokenAsync();
+            var deviceIds = new List<string>();
+            int offset = 0;
+            const int pageSize = 100;
 
-            var data = await response.Content.ReadFromJsonAsync<DeviceQueryResponse>();
-            if (data?.Resources == null || data.Resources.Count == 0)
-                break;
+            while (true)
+            {
+                var url = $"{_options.BaseUrl}/devices/queries/devices/v1?limit={pageSize}&offset={offset}&filter=hostname:'{hostname}'";
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-            deviceIds.AddRange(data.Resources);
-            offset += pageSize;
+                var response = await _httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+
+                var data = await response.Content.ReadFromJsonAsync<DeviceQueryResponse>();
+                if (data?.Resources == null || data.Resources.Count == 0)
+                    break;
+
+                deviceIds.AddRange(data.Resources);
+                offset += pageSize;
+            }
+
+            return deviceIds;
         }
 
-        return deviceIds;
+        /// <summary>
+        /// Retrieves detailed device information for a given device ID (AID).
+        /// </summary>
+        public async Task<DeviceDetail?> GetDeviceDetailsAsync(string aid)
+        {
+            try
+            {
+                Console.WriteLine("🟢 Entering GetDeviceDetailsAsync");
+                Console.WriteLine($"🟢 AID length: {aid?.Length ?? -1}");
+                Console.WriteLine($"🟢 AID value: {aid}");
+
+                var accessToken = await _authService.GetAccessTokenAsync();
+                Console.WriteLine($"🟢 Access token acquired, length: {accessToken?.Length ?? -1}");
+
+                var url = $"{_options.BaseUrl}/devices/entities/devices/v2?ids={Uri.EscapeDataString(aid ?? string.Empty)}";
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                var response = await _httpClient.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"🟢 Response body: {responseBody}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ API returned {response.StatusCode}");
+                    response.EnsureSuccessStatusCode();  // throw
+                }
+
+                var detailData = JsonSerializer.Deserialize<DeviceDetailEnvelope>(
+                    responseBody,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                return detailData?.Resources?.FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"🔥 Exception caught: {ex}");
+                throw;
+            }
+        }
     }
-
-    /// <summary>
-    /// Retrieves detailed device information for a given device ID (AID).
-    /// </summary>
-    /// <param name="aid">The device ID (AID) to retrieve details for.</param>
-    /// <returns>A <see cref="DeviceDetail"/> object representing the device, or null if not found.</returns>
-    public async Task<DeviceDetail?> GetDeviceDetailsAsync(string aid)
-    {
-        var accessToken = await _authService.GetAccessTokenAsync();
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-        var url = $"{_options.BaseUrl}/devices/entities/devices/v2?ids={aid}";
-        var response = await _httpClient.GetAsync(url);
-        response.EnsureSuccessStatusCode();
-
-        var detailData = await response.Content.ReadFromJsonAsync<DeviceDetailEnvelope>();
-
-        return detailData?.Resources?.FirstOrDefault();
-    }
-
-
 }

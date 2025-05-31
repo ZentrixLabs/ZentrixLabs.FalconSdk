@@ -67,4 +67,12 @@ public class CrowdStrikeAuthService
 
         return _accessToken!;
     }
+
+    /// <summary>
+    /// Exposes the current CrowdStrikeOptions configuration.
+    /// </summary>
+    public CrowdStrikeOptions GetOptions()
+    {
+        return _options;
+    }
 }

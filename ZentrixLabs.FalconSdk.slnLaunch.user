@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "ZentrixLabs.FalconSdk.csproj",
+        "Action": "Start",
+        "DebugTarget": "ZentrixLabs.FalconSdk"
+      },
+      {
+        "Path": "..\\ZentrixLabs.FalconConsoleDemo\\ZentrixLabs.FalconConsoleDemo.csproj",
+        "Action": "Start",
+        "DebugTarget": "ZentrixLabs.FalconConsoleDemo"
+      }
+    ]
+  }
+]
