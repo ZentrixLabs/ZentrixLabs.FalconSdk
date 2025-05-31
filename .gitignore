@@ -1,5 +1,24 @@
-/obj
-/bin
+# Ignore build outputs
+bin/
+obj/
+
+# Ignore Visual Studio and Rider settings
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Ignore VS Code settings
+.vscode/
+
+# macOS junk
+.DS_Store
+
+# NuGet package outputs
+*.nupkg
+*.snupkg
+
+
 /Debug
 /Release
 /DebugSymbols
@@ -12,7 +31,6 @@
 /DebugSymbols/DebugSymbols
 /DebugSymbols/DebugSymbols/Debug
 /DebugSymbols/DebugSymbols/DebugSymbols
-.DS_Store
 /.vs/ZentrixLabs.FalconSdk/CopilotIndices
 /.vs/ZentrixLabs.FalconSdk/FileContentIndex
 /.vs/ZentrixLabs.FalconSdk/DesignTimeBuild
