@@ -42,12 +42,21 @@ public class CrowdStrikeSpotlightService
         var accessToken = await _authService.GetAccessTokenAsync();
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-        var url = $"{_options.BaseUrl}/spotlight/queries/vulnerabilities/v1?filter=aid:'{aid}'";
-        var response = await _httpClient.GetAsync(url);
-        response.EnsureSuccessStatusCode();
+        return await PaginationHelper.GetAllPaginatedAsync(
+            fetchPageAsync: async (nextToken) =>
+            {
+                var baseUrl = $"{_options.BaseUrl}/spotlight/queries/vulnerabilities/v1?filter=aid:'{aid}'";
+                var url = string.IsNullOrEmpty(nextToken)
+                    ? baseUrl
+                    : $"{baseUrl}&next_token={Uri.EscapeDataString(nextToken)}";
 
-        var result = await response.Content.ReadFromJsonAsync<VulnerabilityQueryResponse>();
-        return result?.Resources ?? new List<string>();
+                return await _httpClient.GetAsync(url);
+            },
+            parseResponseAsync: async (response) =>
+            {
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadFromJsonAsync<PaginatedResponse<string>>();
+            });
     }
 
     /// <summary>
@@ -71,8 +80,15 @@ public class CrowdStrikeSpotlightService
 
         if (string.IsNullOrEmpty(filter))
         {
-            // Automatically build the filter from the AID like the PowerShell module does
-            filter = $"aid:'{aid}'";
+            if (vulnIds.Count > 0)
+            {
+                var quotedIds = vulnIds.Select(id => $"'{id}'");
+                filter = $"ids:[{string.Join(",", quotedIds)}]";
+            }
+            else
+            {
+                filter = $"aid:'{aid}'";
+            }
         }
 
         Console.WriteLine($"🔗 Querying vulnerabilities with filter: {filter}");
@@ -80,19 +96,28 @@ public class CrowdStrikeSpotlightService
         var accessToken = await _authService.GetAccessTokenAsync();
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-        var url = $"{_options.BaseUrl}/spotlight/combined/vulnerabilities/v1?filter={Uri.EscapeDataString(filter)}";
-        if (useFacets)
-        {
-            url += "&facet=remediation,evaluation_logic";
-        }
+        return await PaginationHelper.GetAllPaginatedAsync(
+            fetchPageAsync: async (nextToken) =>
+            {
+                var baseUrl = $"{_options.BaseUrl}/spotlight/combined/vulnerabilities/v1?filter={Uri.EscapeDataString(filter)}";
+                var url = string.IsNullOrEmpty(nextToken)
+                    ? baseUrl
+                    : $"{baseUrl}&next_token={Uri.EscapeDataString(nextToken)}";
 
-        var response = await _httpClient.GetAsync(url);
-        var responseBody = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"🔎 Raw Response: {responseBody}");
-        response.EnsureSuccessStatusCode();
+                if (useFacets)
+                {
+                    url += "&facet=remediation,evaluation_logic";
+                }
 
-        var result = await response.Content.ReadFromJsonAsync<VulnerabilityDetailEnvelope>();
-        return result?.Resources ?? new List<VulnerabilityDetail>();
+                return await _httpClient.GetAsync(url);
+            },
+            parseResponseAsync: async (response) =>
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"🔎 Raw Response: {responseBody}");
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadFromJsonAsync<PaginatedResponse<VulnerabilityDetail>>();
+            });
     }
 
 

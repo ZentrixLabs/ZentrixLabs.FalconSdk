@@ -42,26 +42,19 @@ namespace ZentrixLabs.FalconSdk.Services
         {
             var accessToken = await _authService.GetAccessTokenAsync();
 
-            var allDeviceIds = new List<string>();
-            int offset = 0;
-            const int pageSize = 500;
-
-            while (true)
-            {
-                var idUrl = $"{_options.BaseUrl}/devices/queries/devices/v1?limit={pageSize}&offset={offset}&sort=last_seen.desc";
-                var idRequest = new HttpRequestMessage(HttpMethod.Get, idUrl);
-                idRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-                var idResponse = await _httpClient.SendAsync(idRequest);
-                idResponse.EnsureSuccessStatusCode();
-
-                var idData = await idResponse.Content.ReadFromJsonAsync<DeviceQueryResponse>();
-                if (idData?.Resources == null || idData.Resources.Count == 0)
-                    break;
-
-                allDeviceIds.AddRange(idData.Resources);
-                offset += pageSize;
-            }
+            var allDeviceIds = await PaginationHelper.GetOffsetPaginatedAsync(
+                fetchPageAsync: async (offset) =>
+                {
+                    var idUrl = $"{_options.BaseUrl}/devices/queries/devices/v1?limit=500&offset={offset}&sort=last_seen.desc";
+                    var idRequest = new HttpRequestMessage(HttpMethod.Get, idUrl);
+                    idRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    return await _httpClient.SendAsync(idRequest);
+                },
+                parseResponseAsync: async (response) =>
+                {
+                    response.EnsureSuccessStatusCode();
+                    return await response.Content.ReadFromJsonAsync<PaginatedResponse<string>>();
+                });
 
             var allDevices = new List<DeviceDetail>();
             const int chunkSize = 100;
@@ -99,28 +92,21 @@ namespace ZentrixLabs.FalconSdk.Services
         public async Task<List<string>> GetDeviceIdsAsync(string hostname)
         {
             var accessToken = await _authService.GetAccessTokenAsync();
-            var deviceIds = new List<string>();
-            int offset = 0;
-            const int pageSize = 100;
 
-            while (true)
-            {
-                var url = $"{_options.BaseUrl}/devices/queries/devices/v1?limit={pageSize}&offset={offset}&filter=hostname:'{hostname}'";
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-                var response = await _httpClient.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-
-                var data = await response.Content.ReadFromJsonAsync<DeviceQueryResponse>();
-                if (data?.Resources == null || data.Resources.Count == 0)
-                    break;
-
-                deviceIds.AddRange(data.Resources);
-                offset += pageSize;
-            }
-
-            return deviceIds;
+            return await PaginationHelper.GetOffsetPaginatedAsync(
+                fetchPageAsync: async (offset) =>
+                {
+                    var url = $"{_options.BaseUrl}/devices/queries/devices/v1?limit=100&offset={offset}&filter=hostname:'{hostname}'";
+                    var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    return await _httpClient.SendAsync(request);
+                },
+                parseResponseAsync: async (response) =>
+                {
+                    response.EnsureSuccessStatusCode();
+                    return await response.Content.ReadFromJsonAsync<PaginatedResponse<string>>();
+                },
+                pageSize: 100);
         }
 
         /// <summary>
