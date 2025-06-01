@@ -6,7 +6,7 @@ namespace ZentrixLabs.FalconSdk.Helpers;
 
 public static class PaginationHelper
 {
-    public static async Task<List<T>> GetAllPaginatedAsync<T>(
+    public static async Task<List<T>> GetTokenPaginatedAsync<T>(
         Func<string?, Task<HttpResponseMessage>> fetchPageAsync,
         Func<HttpResponseMessage, Task<PaginatedResponse<T>>> parseResponseAsync)
     {
@@ -24,6 +24,31 @@ public static class PaginationHelper
             nextToken = parsed?.Pagination?.NextToken;
         }
         while (!string.IsNullOrEmpty(nextToken));
+
+        return allResults;
+    }
+
+    public static async Task<List<T>> GetOffsetPaginatedAsync<T>(
+        Func<int, Task<HttpResponseMessage>> fetchPageAsync,
+        Func<HttpResponseMessage, Task<PaginatedResponse<T>>> parseResponseAsync,
+        int pageSize = 500)
+    {
+        var allResults = new List<T>();
+        int offset = 0;
+        int? total = null;
+
+        do
+        {
+            var response = await fetchPageAsync(offset);
+            var parsed = await parseResponseAsync(response);
+
+            if (parsed?.Resources != null)
+                allResults.AddRange(parsed.Resources);
+
+            total = parsed?.Pagination?.Total ?? total;
+            offset += pageSize;
+        }
+        while (total == null || offset < total);
 
         return allResults;
     }

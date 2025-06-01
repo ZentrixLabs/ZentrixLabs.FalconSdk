@@ -13,6 +13,7 @@ public class CrowdStrikeAuthService
 {
     private readonly HttpClient _httpClient;
     private readonly CrowdStrikeOptions _options;
+    private readonly ILogger<CrowdStrikeAuthService> _logger;
     private string? _accessToken;
     private DateTime _expiresAt;
     private readonly SemaphoreSlim _tokenLock = new(1, 1);
@@ -23,10 +24,12 @@ public class CrowdStrikeAuthService
     /// </summary>
     /// <param name="httpClient">The HTTP client instance used to make requests.</param>
     /// <param name="options">The options containing CrowdStrike credentials and endpoint base URL.</param>
-    public CrowdStrikeAuthService(HttpClient httpClient, IOptions<CrowdStrikeOptions> options)
+    /// <param name="logger">The logger instance for logging errors and info.</param>
+    public CrowdStrikeAuthService(HttpClient httpClient, IOptions<CrowdStrikeOptions> options, ILogger<CrowdStrikeAuthService> logger)
     {
         _httpClient = httpClient;
         _options = options.Value;
+        _logger = logger;
     }
 
     /// <summary>
@@ -122,7 +125,7 @@ public class CrowdStrikeAuthService
                 catch (Exception ex)
                 {
                     // Log and continue loop
-                    Console.Error.WriteLine($"[CrowdStrikeAuthService] Token refresh error: {ex.Message}");
+                    _logger.LogError(ex, "[CrowdStrikeAuthService] Token refresh error");
                     await Task.Delay(TimeSpan.FromMinutes(1), cancellationToken);
                 }
             }

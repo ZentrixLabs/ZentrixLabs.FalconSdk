@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using ZentrixLabs.FalconSdk.Configuration;
 using ZentrixLabs.FalconSdk.Models;
+using Microsoft.Extensions.Logging;
 
 namespace ZentrixLabs.FalconSdk.Services;
 
@@ -15,6 +16,7 @@ public class CrowdStrikeSpotlightService
     private readonly HttpClient _httpClient;
     private readonly CrowdStrikeAuthService _authService;
     private readonly CrowdStrikeOptions _options;
+    private readonly ILogger<CrowdStrikeSpotlightService> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CrowdStrikeSpotlightService"/> class.
@@ -22,14 +24,17 @@ public class CrowdStrikeSpotlightService
     /// <param name="httpClient">The HTTP client used for API requests.</param>
     /// <param name="authService">The authentication service for obtaining access tokens.</param>
     /// <param name="options">The configuration options for CrowdStrike API.</param>
+    /// <param name="logger">The logger instance.</param>
     public CrowdStrikeSpotlightService(
         HttpClient httpClient,
         CrowdStrikeAuthService authService,
-        IOptions<CrowdStrikeOptions> options)
+        IOptions<CrowdStrikeOptions> options,
+        ILogger<CrowdStrikeSpotlightService> logger)
     {
         _httpClient = httpClient;
         _authService = authService;
         _options = options.Value;
+        _logger = logger;
     }
 
     /// <summary>
@@ -91,7 +96,7 @@ public class CrowdStrikeSpotlightService
             }
         }
 
-        Console.WriteLine($"🔗 Querying vulnerabilities with filter: {filter}");
+        _logger.LogDebug("🔗 Querying vulnerabilities with filter: {Filter}", filter);
 
         var accessToken = await _authService.GetAccessTokenAsync();
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -114,7 +119,7 @@ public class CrowdStrikeSpotlightService
             parseResponseAsync: async (response) =>
             {
                 var responseBody = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"🔎 Raw Response: {responseBody}");
+                _logger.LogDebug("🔎 Raw Response: {ResponseBody}", responseBody);
                 response.EnsureSuccessStatusCode();
                 return await response.Content.ReadFromJsonAsync<PaginatedResponse<VulnerabilityDetail>>();
             });

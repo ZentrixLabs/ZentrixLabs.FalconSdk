@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using ZentrixLabs.FalconSdk.Models;
 using ZentrixLabs.FalconSdk.Configuration;
 
@@ -15,6 +16,7 @@ namespace ZentrixLabs.FalconSdk.Services
         private readonly HttpClient _httpClient;
         private readonly CrowdStrikeAuthService _authService;
         private readonly CrowdStrikeOptions _options;
+        private readonly ILogger<CrowdStrikeDeviceService> _logger;
 
         private const string ServerTypeCode = "2";
         private const string DomainControllerTypeCode = "3";
@@ -25,14 +27,17 @@ namespace ZentrixLabs.FalconSdk.Services
         /// <param name="httpClient">The HTTP client used for API requests.</param>
         /// <param name="authService">The authentication service for obtaining access tokens.</param>
         /// <param name="options">The configuration options for CrowdStrike API.</param>
+        /// <param name="logger">The logger instance.</param>
         public CrowdStrikeDeviceService(
             HttpClient httpClient,
             CrowdStrikeAuthService authService,
-            IOptions<CrowdStrikeOptions> options)
+            IOptions<CrowdStrikeOptions> options,
+            ILogger<CrowdStrikeDeviceService> logger)
         {
             _httpClient = httpClient;
             _authService = authService;
             _options = options.Value;
+            _logger = logger;
         }
 
         /// <summary>
@@ -116,12 +121,12 @@ namespace ZentrixLabs.FalconSdk.Services
         {
             try
             {
-                Console.WriteLine("🟢 Entering GetDeviceDetailsAsync");
-                Console.WriteLine($"🟢 AID length: {aid?.Length ?? -1}");
-                Console.WriteLine($"🟢 AID value: {aid}");
+                _logger.LogDebug("🟢 Entering GetDeviceDetailsAsync");
+                _logger.LogDebug("🟢 AID length: {Length}", aid?.Length ?? -1);
+                _logger.LogDebug("🟢 AID value: {Aid}", aid);
 
                 var accessToken = await _authService.GetAccessTokenAsync();
-                Console.WriteLine($"🟢 Access token acquired, length: {accessToken?.Length ?? -1}");
+                _logger.LogDebug("🟢 Access token acquired, length: {Length}", accessToken?.Length ?? -1);
 
                 var url = $"{_options.BaseUrl}/devices/entities/devices/v2?ids={Uri.EscapeDataString(aid ?? string.Empty)}";
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -129,11 +134,11 @@ namespace ZentrixLabs.FalconSdk.Services
 
                 var response = await _httpClient.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"🟢 Response body: {responseBody}");
+                _logger.LogDebug("🟢 Response body: {ResponseBody}", responseBody);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"❌ API returned {response.StatusCode}");
+                    _logger.LogError("❌ API returned {StatusCode}", response.StatusCode);
                     response.EnsureSuccessStatusCode();  // throw
                 }
 
@@ -145,7 +150,7 @@ namespace ZentrixLabs.FalconSdk.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"🔥 Exception caught: {ex}");
+                _logger.LogError(ex, "🔥 Exception caught in GetDeviceDetailsAsync");
                 throw;
             }
         }
