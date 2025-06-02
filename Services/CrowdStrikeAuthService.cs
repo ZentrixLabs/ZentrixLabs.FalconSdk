@@ -65,19 +65,43 @@ public class CrowdStrikeAuthService
 
             request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
-            var response = await _httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
+            HttpResponseMessage response = null!;
+            for (int attempt = 1; attempt <= 3; attempt++)
+            {
+                try
+                {
+                    response = await _httpClient.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+                    break;
+                }
+                catch (Exception ex) when (attempt < 3)
+                {
+                    _logger.LogWarning(ex, "[CrowdStrikeAuthService] Token request attempt {Attempt} failed. Retrying...", attempt);
+                    await Task.Delay(500);
+                }
+            }
 
-            var result = await response.Content.ReadFromJsonAsync<CrowdStrikeTokenResponse>();
+            var responseBody = await response.Content.ReadAsStringAsync();
+            _logger.LogDebug("🔎 Raw Auth Response: {ResponseBody}", responseBody);
+
+            if (responseBody.Contains("\"errors\":", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("⚠️ Auth response contains API-level errors: {ResponseBody}", responseBody);
+            }
+
+            var result = JsonSerializer.Deserialize<CrowdStrikeTokenResponse>(responseBody);
 
             if (result is null || string.IsNullOrEmpty(result.AccessToken))
             {
+                _logger.LogError("[CrowdStrikeAuthService] Token response invalid or missing access token.");
                 throw new InvalidOperationException("Failed to retrieve access token from CrowdStrike.");
             }
 
             _accessToken = result.AccessToken;
             var expiresIn = result.ExpiresIn > 0 ? result.ExpiresIn : 300;
             _expiresAt = DateTime.UtcNow.AddSeconds(expiresIn) - _refreshBuffer;
+
+            _logger.LogDebug("[CrowdStrikeAuthService] Successfully retrieved access token. Expires in {Seconds}s", expiresIn);
 
             return _accessToken!;
         }

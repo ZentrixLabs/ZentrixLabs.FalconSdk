@@ -59,8 +59,16 @@ public class CrowdStrikeSpotlightService
             },
             parseResponseAsync: async (response) =>
             {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                _logger.LogDebug("🔎 Raw Response: {ResponseBody}", responseBody);
+
+                if (responseBody.Contains("\"errors\":", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning("⚠️ Response contains API-level errors: {ResponseBody}", responseBody);
+                }
+
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<PaginatedResponse<string>>();
+                return JsonSerializer.Deserialize<PaginatedResponse<string>>(responseBody);
             });
     }
 
@@ -120,8 +128,14 @@ public class CrowdStrikeSpotlightService
             {
                 var responseBody = await response.Content.ReadAsStringAsync();
                 _logger.LogDebug("🔎 Raw Response: {ResponseBody}", responseBody);
+
+                if (responseBody.Contains("\"errors\":", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning("⚠️ Response contains API-level errors: {ResponseBody}", responseBody);
+                }
+
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<PaginatedResponse<VulnerabilityDetail>>();
+                return JsonSerializer.Deserialize<PaginatedResponse<VulnerabilityDetail>>(responseBody);
             });
     }
 

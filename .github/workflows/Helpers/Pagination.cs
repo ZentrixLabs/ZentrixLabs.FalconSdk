@@ -6,6 +6,24 @@ namespace ZentrixLabs.FalconSdk.Helpers;
 
 public static class PaginationHelper
 {
+    private static async Task<T> RetryOnFailureAsync<T>(Func<Task<T>> action, int maxRetries = 3, int delayMilliseconds = 500)
+    {
+        for (int attempt = 0; attempt < maxRetries; attempt++)
+        {
+            try
+            {
+                return await action();
+            }
+            catch when (attempt < maxRetries - 1)
+            {
+                await Task.Delay(delayMilliseconds);
+            }
+        }
+
+        // Last attempt, let the exception bubble up
+        return await action();
+    }
+
     public static async Task<List<T>> GetTokenPaginatedAsync<T>(
         Func<string?, Task<HttpResponseMessage>> fetchPageAsync,
         Func<HttpResponseMessage, Task<PaginatedResponse<T>>> parseResponseAsync)
@@ -15,8 +33,8 @@ public static class PaginationHelper
 
         do
         {
-            var response = await fetchPageAsync(nextToken);
-            var parsed = await parseResponseAsync(response);
+            var response = await RetryOnFailureAsync(() => fetchPageAsync(nextToken));
+            var parsed = await RetryOnFailureAsync(() => parseResponseAsync(response));
 
             if (parsed?.Resources != null)
                 allResults.AddRange(parsed.Resources);
@@ -39,8 +57,8 @@ public static class PaginationHelper
 
         do
         {
-            var response = await fetchPageAsync(offset);
-            var parsed = await parseResponseAsync(response);
+            var response = await RetryOnFailureAsync(() => fetchPageAsync(offset));
+            var parsed = await RetryOnFailureAsync(() => parseResponseAsync(response));
 
             if (parsed?.Resources != null)
                 allResults.AddRange(parsed.Resources);

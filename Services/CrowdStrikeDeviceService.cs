@@ -71,10 +71,30 @@ namespace ZentrixLabs.FalconSdk.Services
                 var detailRequest = new HttpRequestMessage(HttpMethod.Get, detailUrl);
                 detailRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-                var detailResponse = await _httpClient.SendAsync(detailRequest);
-                detailResponse.EnsureSuccessStatusCode();
+                HttpResponseMessage detailResponse = null!;
+                for (int attempt = 1; attempt <= 3; attempt++)
+                {
+                    try
+                    {
+                        detailResponse = await _httpClient.SendAsync(detailRequest);
+                        detailResponse.EnsureSuccessStatusCode();
+                        break;
+                    }
+                    catch (Exception ex) when (attempt < 3)
+                    {
+                        _logger.LogWarning(ex, "[CrowdStrikeDeviceService] Detail request attempt {Attempt} failed. Retrying...", attempt);
+                        await Task.Delay(500);
+                    }
+                }
 
                 var rawJson = await detailResponse.Content.ReadAsStringAsync();
+                _logger.LogDebug("🔎 Raw Device Detail Response: {RawJson}", rawJson);
+
+                if (rawJson.Contains("\"errors\":", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning("⚠️ Device detail response contains API-level errors: {RawJson}", rawJson);
+                }
+
                 var detailData = JsonSerializer.Deserialize<DeviceDetailEnvelope>(
                     rawJson,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -108,8 +128,16 @@ namespace ZentrixLabs.FalconSdk.Services
                 },
                 parseResponseAsync: async (response) =>
                 {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    _logger.LogDebug("🔎 Raw Response: {ResponseBody}", responseBody);
+
+                    if (responseBody.Contains("\"errors\":", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.LogWarning("⚠️ Response contains API-level errors: {ResponseBody}", responseBody);
+                    }
+
                     response.EnsureSuccessStatusCode();
-                    return await response.Content.ReadFromJsonAsync<PaginatedResponse<string>>();
+                    return JsonSerializer.Deserialize<PaginatedResponse<string>>(responseBody);
                 },
                 pageSize: 100);
         }
