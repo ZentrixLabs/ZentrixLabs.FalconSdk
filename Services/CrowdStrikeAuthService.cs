@@ -145,4 +145,30 @@ public class CrowdStrikeAuthService
             authService.StartBackgroundRefreshLoop(token);
         }
     }
+    /// <summary>
+    /// Checks whether the CrowdStrike API is reachable and authentication is working.
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token for the request.</param>
+    /// <returns>True if the API is reachable and authentication succeeds; otherwise, false.</returns>
+    public async Task<bool> IsApiReachableAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var accessToken = await GetAccessTokenAsync();
+
+            var baseUrl = _options.BaseUrl?.TrimEnd('/');
+            var url = $"{baseUrl}/devices/queries/devices/v1?limit=1";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[CrowdStrikeAuthService] API reachability check failed");
+            return false;
+        }
+    }
 }
