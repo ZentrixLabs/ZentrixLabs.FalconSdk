@@ -5,6 +5,7 @@ using System.Text.Json;
 using ZentrixLabs.FalconSdk.Configuration;
 using ZentrixLabs.FalconSdk.Models;
 using Microsoft.Extensions.Logging;
+using ZentrixLabs.FalconSdk.Helpers;
 
 namespace ZentrixLabs.FalconSdk.Services;
 
@@ -42,34 +43,49 @@ public class CrowdStrikeSpotlightService
     /// </summary>
     /// <param name="aid">The host ID (AID) to query vulnerabilities for.</param>
     /// <returns>A list of vulnerability IDs.</returns>
-    public async Task<List<string>> GetVulnerabilityIdsForHostAsync(string aid)
+    public async Task<FalconRequestResult<List<string>>> GetVulnerabilityIdsForHostAsync(string aid)
     {
-        var accessToken = await _authService.GetAccessTokenAsync();
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        var result = new FalconRequestResult<List<string>>();
+        try
+        {
+            var accessToken = await _authService.GetAccessTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-        return await PaginationHelper.GetAllPaginatedAsync(
-            fetchPageAsync: async (nextToken) =>
-            {
-                var baseUrl = $"{_options.BaseUrl}/spotlight/queries/vulnerabilities/v1?filter=aid:'{aid}'";
-                var url = string.IsNullOrEmpty(nextToken)
-                    ? baseUrl
-                    : $"{baseUrl}&next_token={Uri.EscapeDataString(nextToken)}";
-
-                return await _httpClient.GetAsync(url);
-            },
-            parseResponseAsync: async (response) =>
-            {
-                var responseBody = await response.Content.ReadAsStringAsync();
-                _logger.LogDebug("🔎 Raw Response: {ResponseBody}", responseBody);
-
-                if (responseBody.Contains("\"errors\":", StringComparison.OrdinalIgnoreCase))
+            var ids = await PaginationHelper.GetAllPaginatedAsync(
+                fetchPageAsync: async (nextToken) =>
                 {
-                    _logger.LogWarning("⚠️ Response contains API-level errors: {ResponseBody}", responseBody);
-                }
+                    var baseUrl = $"{_options.BaseUrl}/spotlight/queries/vulnerabilities/v1?filter=aid:'{aid}'";
+                    var url = string.IsNullOrEmpty(nextToken)
+                        ? baseUrl
+                        : $"{baseUrl}&next_token={Uri.EscapeDataString(nextToken)}";
 
-                response.EnsureSuccessStatusCode();
-                return JsonSerializer.Deserialize<PaginatedResponse<string>>(responseBody);
-            });
+                    return await _httpClient.GetAsync(url);
+                },
+                parseResponseAsync: async (response) =>
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    result.RawResponse = responseBody;
+
+                    if (ApiErrorHelper.LogAndCheckForApiErrors(_logger, responseBody, "Spotlight API"))
+                    {
+                        result.ErrorMessage = "API-level error found in response.";
+                    }
+
+                    response.EnsureSuccessStatusCode();
+                    return JsonSerializer.Deserialize<PaginatedResponse<string>>(responseBody);
+                });
+
+            result.Data = ids;
+            result.StatusCode = System.Net.HttpStatusCode.OK;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "🔥 Exception in GetVulnerabilityIdsForHostAsync");
+            result.StatusCode = System.Net.HttpStatusCode.InternalServerError;
+            result.Exception = ex;
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -82,61 +98,77 @@ public class CrowdStrikeSpotlightService
     /// <param name="useFacets">Indicates whether to include facets like remediation or evaluation logic in the query.</param>
     /// <returns>A list of <see cref="VulnerabilityDetail"/> objects containing detailed information about the vulnerabilities.</returns>
     /// <exception cref="HttpRequestException">Thrown when the API request fails.</exception>
-    public async Task<List<VulnerabilityDetail>> GetVulnerabilityDetailsAsync(
+    public async Task<FalconRequestResult<List<VulnerabilityDetail>>> GetVulnerabilityDetailsAsync(
         string aid,
         List<string>? vulnIds = null,
         bool useHostSpecific = true,
         string? filter = null,
         bool useFacets = false)
     {
-        vulnIds ??= new List<string>();
+        var result = new FalconRequestResult<List<VulnerabilityDetail>>();
 
-        if (string.IsNullOrEmpty(filter))
+        try
         {
-            if (vulnIds.Count > 0)
+            vulnIds ??= new List<string>();
+
+            if (string.IsNullOrEmpty(filter))
             {
-                var quotedIds = vulnIds.Select(id => $"'{id}'");
-                filter = $"ids:[{string.Join(",", quotedIds)}]";
+                if (vulnIds.Count > 0)
+                {
+                    var quotedIds = vulnIds.Select(id => $"'{id}'");
+                    filter = $"ids:[{string.Join(",", quotedIds)}]";
+                }
+                else
+                {
+                    filter = $"aid:'{aid}'";
+                }
             }
-            else
-            {
-                filter = $"aid:'{aid}'";
-            }
+
+            _logger.LogDebug("🔗 Querying vulnerabilities with filter: {Filter}", filter);
+
+            var accessToken = await _authService.GetAccessTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var details = await PaginationHelper.GetAllPaginatedAsync(
+                fetchPageAsync: async (nextToken) =>
+                {
+                    var baseUrl = $"{_options.BaseUrl}/spotlight/combined/vulnerabilities/v1?filter={Uri.EscapeDataString(filter)}";
+                    var url = string.IsNullOrEmpty(nextToken)
+                        ? baseUrl
+                        : $"{baseUrl}&next_token={Uri.EscapeDataString(nextToken)}";
+
+                    if (useFacets)
+                    {
+                        url += "&facet=remediation,evaluation_logic";
+                    }
+
+                    return await _httpClient.GetAsync(url);
+                },
+                parseResponseAsync: async (response) =>
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    result.RawResponse = responseBody;
+
+                    if (ApiErrorHelper.LogAndCheckForApiErrors(_logger, responseBody, "Spotlight API"))
+                    {
+                        result.ErrorMessage = "API-level error found in response.";
+                    }
+
+                    response.EnsureSuccessStatusCode();
+                    return JsonSerializer.Deserialize<PaginatedResponse<VulnerabilityDetail>>(responseBody);
+                });
+
+            result.Data = details;
+            result.StatusCode = System.Net.HttpStatusCode.OK;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "🔥 Exception in GetVulnerabilityDetailsAsync");
+            result.StatusCode = System.Net.HttpStatusCode.InternalServerError;
+            result.Exception = ex;
         }
 
-        _logger.LogDebug("🔗 Querying vulnerabilities with filter: {Filter}", filter);
-
-        var accessToken = await _authService.GetAccessTokenAsync();
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-        return await PaginationHelper.GetAllPaginatedAsync(
-            fetchPageAsync: async (nextToken) =>
-            {
-                var baseUrl = $"{_options.BaseUrl}/spotlight/combined/vulnerabilities/v1?filter={Uri.EscapeDataString(filter)}";
-                var url = string.IsNullOrEmpty(nextToken)
-                    ? baseUrl
-                    : $"{baseUrl}&next_token={Uri.EscapeDataString(nextToken)}";
-
-                if (useFacets)
-                {
-                    url += "&facet=remediation,evaluation_logic";
-                }
-
-                return await _httpClient.GetAsync(url);
-            },
-            parseResponseAsync: async (response) =>
-            {
-                var responseBody = await response.Content.ReadAsStringAsync();
-                _logger.LogDebug("🔎 Raw Response: {ResponseBody}", responseBody);
-
-                if (responseBody.Contains("\"errors\":", StringComparison.OrdinalIgnoreCase))
-                {
-                    _logger.LogWarning("⚠️ Response contains API-level errors: {ResponseBody}", responseBody);
-                }
-
-                response.EnsureSuccessStatusCode();
-                return JsonSerializer.Deserialize<PaginatedResponse<VulnerabilityDetail>>(responseBody);
-            });
+        return result;
     }
 
 

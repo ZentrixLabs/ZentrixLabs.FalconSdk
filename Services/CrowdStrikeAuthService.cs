@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using ZentrixLabs.FalconSdk.Models;
 using ZentrixLabs.FalconSdk.Configuration;
 using System.Net.Http.Json;
+using ZentrixLabs.FalconSdk.Helpers;
 
 namespace ZentrixLabs.FalconSdk.Services;
 
@@ -17,7 +18,7 @@ public class CrowdStrikeAuthService
     private string? _accessToken;
     private DateTime _expiresAt;
     private readonly SemaphoreSlim _tokenLock = new(1, 1);
-    private readonly TimeSpan _refreshBuffer = TimeSpan.FromSeconds(60); // configurable if needed
+    private readonly TimeSpan _refreshBuffer;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CrowdStrikeAuthService"/> class.
@@ -30,6 +31,7 @@ public class CrowdStrikeAuthService
         _httpClient = httpClient;
         _options = options.Value;
         _logger = logger;
+        _refreshBuffer = TimeSpan.FromSeconds(_options.RefreshBufferSeconds);
     }
 
     /// <summary>
@@ -65,11 +67,13 @@ public class CrowdStrikeAuthService
 
             request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
-            HttpResponseMessage response = null!;
-            for (int attempt = 1; attempt <= 3; attempt++)
+            HttpResponseMessage response;
+            int attempt = 0;
+            while (true)
             {
                 try
                 {
+                    attempt++;
                     response = await _httpClient.SendAsync(request);
                     response.EnsureSuccessStatusCode();
                     break;
@@ -79,15 +83,17 @@ public class CrowdStrikeAuthService
                     _logger.LogWarning(ex, "[CrowdStrikeAuthService] Token request attempt {Attempt} failed. Retrying...", attempt);
                     await Task.Delay(500);
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[CrowdStrikeAuthService] Token request failed after {Attempt} attempts.", attempt);
+                    throw;
+                }
             }
 
             var responseBody = await response.Content.ReadAsStringAsync();
             _logger.LogDebug("🔎 Raw Auth Response: {ResponseBody}", responseBody);
 
-            if (responseBody.Contains("\"errors\":", StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogWarning("⚠️ Auth response contains API-level errors: {ResponseBody}", responseBody);
-            }
+            ApiErrorHelper.LogAndCheckForApiErrors(_logger, responseBody, "Auth Token Response");
 
             var result = JsonSerializer.Deserialize<CrowdStrikeTokenResponse>(responseBody);
 
@@ -102,6 +108,7 @@ public class CrowdStrikeAuthService
             _expiresAt = DateTime.UtcNow.AddSeconds(expiresIn) - _refreshBuffer;
 
             _logger.LogDebug("[CrowdStrikeAuthService] Successfully retrieved access token. Expires in {Seconds}s", expiresIn);
+            _logger.LogDebug("[CrowdStrikeAuthService] Token expires at {ExpiresAt} UTC", _expiresAt);
 
             return _accessToken!;
         }
@@ -131,12 +138,12 @@ public class CrowdStrikeAuthService
             {
                 try
                 {
-                    var timeUntilRefresh = _expiresAt - DateTime.UtcNow - TimeSpan.FromSeconds(10);
+                    var timeUntilRefresh = _expiresAt - DateTime.UtcNow - TimeSpan.FromSeconds(_options.EarlyRefreshSeconds);
                     if (timeUntilRefresh < TimeSpan.Zero)
                     {
                         // Expired or very close to expiring, refresh now
                         await GetAccessTokenAsync();
-                        timeUntilRefresh = _expiresAt - DateTime.UtcNow - TimeSpan.FromSeconds(10);
+                        timeUntilRefresh = _expiresAt - DateTime.UtcNow - TimeSpan.FromSeconds(_options.EarlyRefreshSeconds);
                     }
 
                     await Task.Delay(timeUntilRefresh > TimeSpan.Zero ? timeUntilRefresh : TimeSpan.FromSeconds(60), cancellationToken);

@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using System.Collections.Generic;
 
 namespace ZentrixLabs.FalconSdk.Models;
 
@@ -20,4 +21,10 @@ public class CrowdStrikeTokenResponse
     /// </summary>
     [JsonPropertyName("expires_in")]
     public int ExpiresIn { get; set; }
+
+    /// <summary>
+    /// Optional error details returned if the token request failed.
+    /// </summary>
+    [JsonPropertyName("errors")]
+    public List<ApiError>? Errors { get; set; }
 }

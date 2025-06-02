@@ -23,6 +23,16 @@ public class CrowdStrikeOptions
     public string ClientSecret { get; set; } = string.Empty;
 
     /// <summary>
+    /// The number of seconds to subtract from token expiration to ensure refresh before expiry.
+    /// </summary>
+    public int RefreshBufferSeconds { get; set; } = 60;
+
+    /// <summary>
+    /// The interval in seconds to wait before checking if the token should be refreshed early.
+    /// </summary>
+    public int EarlyRefreshSeconds { get; set; } = 10;
+
+    /// <summary>
     /// Validates that required configuration fields are set correctly.
     /// Throws ArgumentException if any are missing or malformed.
     /// </summary>

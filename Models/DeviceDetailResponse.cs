@@ -358,8 +358,7 @@ public class DeviceDetailEnvelope
 
     /// <summary>
     /// A list of errors encountered during the API request, if any.
-    /// This is loosely structured and may contain untyped details.
     /// </summary>
     [JsonPropertyName("errors")]
-    public List<object>? Errors { get; set; }
+    public List<ApiError>? Errors { get; set; }
 }
