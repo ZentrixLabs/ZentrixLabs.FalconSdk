@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ZentrixLabs.FalconSdk.Models;
 using ZentrixLabs.FalconSdk.Services;
+using ZentrixLabs.FalconSdk.Configuration;
 
 namespace ZentrixLabs.FalconSdk;
 

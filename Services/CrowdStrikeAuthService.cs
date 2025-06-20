@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using ZentrixLabs.FalconSdk.Models;
 using ZentrixLabs.FalconSdk.Configuration;
 using System.Net.Http.Json;
