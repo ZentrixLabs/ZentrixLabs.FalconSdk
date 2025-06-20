@@ -171,14 +171,216 @@ public class CrowdStrikeSpotlightService
         return result;
     }
 
+    /// <summary>
+    /// Retrieves a list of vulnerability hosts matching the specified filter.
+    /// </summary>
+    public async Task<FalconRequestResult<List<VulnerabilityHost>>> GetVulnerabilityHostsAsync(string? filter = null)
+    {
+        var result = new FalconRequestResult<List<VulnerabilityHost>>();
+        try
+        {
+            var accessToken = await _authService.GetAccessTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
+            var url = $"{_options.BaseUrl}/spotlight/combined/hosts/v1";
+            if (!string.IsNullOrEmpty(filter))
+                url += $"?filter={Uri.EscapeDataString(filter)}";
 
+            var response = await _httpClient.GetAsync(url);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            result.RawResponse = responseBody;
 
+            if (ApiErrorHelper.LogAndCheckForApiErrors(_logger, responseBody, "Spotlight API"))
+                result.ErrorMessage = "API-level error found in response.";
 
+            response.EnsureSuccessStatusCode();
+            var parsed = JsonSerializer.Deserialize<PaginatedResponse<VulnerabilityHost>>(responseBody);
+            result.Data = parsed?.Resources ?? new List<VulnerabilityHost>();
+            result.StatusCode = System.Net.HttpStatusCode.OK;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "🔥 Exception in GetVulnerabilityHostsAsync");
+            result.StatusCode = System.Net.HttpStatusCode.InternalServerError;
+            result.Exception = ex;
+        }
+        return result;
+    }
 
+    /// <summary>
+    /// Retrieves a list of vulnerability remediations.
+    /// </summary>
+    public async Task<FalconRequestResult<List<VulnerabilityRemediation>>> GetVulnerabilityRemediationsAsync(string? filter = null)
+    {
+        var result = new FalconRequestResult<List<VulnerabilityRemediation>>();
+        try
+        {
+            var accessToken = await _authService.GetAccessTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
+            var url = $"{_options.BaseUrl}/spotlight/combined/remediations/v1";
+            if (!string.IsNullOrEmpty(filter))
+                url += $"?filter={Uri.EscapeDataString(filter)}";
 
+            var response = await _httpClient.GetAsync(url);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            result.RawResponse = responseBody;
 
+            if (ApiErrorHelper.LogAndCheckForApiErrors(_logger, responseBody, "Spotlight API"))
+                result.ErrorMessage = "API-level error found in response.";
 
+            response.EnsureSuccessStatusCode();
+            var parsed = JsonSerializer.Deserialize<PaginatedResponse<VulnerabilityRemediation>>(responseBody);
+            result.Data = parsed?.Resources ?? new List<VulnerabilityRemediation>();
+            result.StatusCode = System.Net.HttpStatusCode.OK;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "🔥 Exception in GetVulnerabilityRemediationsAsync");
+            result.StatusCode = System.Net.HttpStatusCode.InternalServerError;
+            result.Exception = ex;
+        }
+        return result;
+    }
 
+    /// <summary>
+    /// Retrieves vulnerability count based on filter.
+    /// </summary>
+    public async Task<FalconRequestResult<int>> GetVulnerabilityCountAsync(string? filter = null)
+    {
+        var result = new FalconRequestResult<int>();
+        try
+        {
+            var accessToken = await _authService.GetAccessTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var url = $"{_options.BaseUrl}/spotlight/queries/vulnerabilities/v1";
+            if (!string.IsNullOrEmpty(filter))
+                url += $"?filter={Uri.EscapeDataString(filter)}";
+
+            var response = await _httpClient.GetAsync(url);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            result.RawResponse = responseBody;
+
+            if (ApiErrorHelper.LogAndCheckForApiErrors(_logger, responseBody, "Spotlight API"))
+                result.ErrorMessage = "API-level error found in response.";
+
+            response.EnsureSuccessStatusCode();
+            var parsed = JsonSerializer.Deserialize<PaginatedResponse<string>>(responseBody);
+            result.Data = parsed?.Meta?.Pagination?.Total ?? 0;
+            result.StatusCode = System.Net.HttpStatusCode.OK;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "🔥 Exception in GetVulnerabilityCountAsync");
+            result.StatusCode = System.Net.HttpStatusCode.InternalServerError;
+            result.Exception = ex;
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Retrieves vulnerability host count based on filter.
+    /// </summary>
+    public async Task<FalconRequestResult<int>> GetVulnerabilityHostCountAsync(string? filter = null)
+    {
+        var result = new FalconRequestResult<int>();
+        try
+        {
+            var accessToken = await _authService.GetAccessTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var url = $"{_options.BaseUrl}/spotlight/queries/hosts/v1";
+            if (!string.IsNullOrEmpty(filter))
+                url += $"?filter={Uri.EscapeDataString(filter)}";
+
+            var response = await _httpClient.GetAsync(url);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            result.RawResponse = responseBody;
+
+            if (ApiErrorHelper.LogAndCheckForApiErrors(_logger, responseBody, "Spotlight API"))
+                result.ErrorMessage = "API-level error found in response.";
+
+            response.EnsureSuccessStatusCode();
+            var parsed = JsonSerializer.Deserialize<PaginatedResponse<string>>(responseBody);
+            result.Data = parsed?.Meta?.Pagination?.Total ?? 0;
+            result.StatusCode = System.Net.HttpStatusCode.OK;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "🔥 Exception in GetVulnerabilityHostCountAsync");
+            result.StatusCode = System.Net.HttpStatusCode.InternalServerError;
+            result.Exception = ex;
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Retrieves vulnerability remediation count based on filter.
+    /// </summary>
+    public async Task<FalconRequestResult<int>> GetVulnerabilityRemediationCountAsync(string? filter = null)
+    {
+        var result = new FalconRequestResult<int>();
+        try
+        {
+            var accessToken = await _authService.GetAccessTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var url = $"{_options.BaseUrl}/spotlight/queries/remediations/v1";
+            if (!string.IsNullOrEmpty(filter))
+                url += $"?filter={Uri.EscapeDataString(filter)}";
+
+            var response = await _httpClient.GetAsync(url);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            result.RawResponse = responseBody;
+
+            if (ApiErrorHelper.LogAndCheckForApiErrors(_logger, responseBody, "Spotlight API"))
+                result.ErrorMessage = "API-level error found in response.";
+
+            response.EnsureSuccessStatusCode();
+            var parsed = JsonSerializer.Deserialize<PaginatedResponse<string>>(responseBody);
+            result.Data = parsed?.Meta?.Pagination?.Total ?? 0;
+            result.StatusCode = System.Net.HttpStatusCode.OK;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "🔥 Exception in GetVulnerabilityRemediationCountAsync");
+            result.StatusCode = System.Net.HttpStatusCode.InternalServerError;
+            result.Exception = ex;
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Retrieves evaluation logic for vulnerabilities.
+    /// </summary>
+    public async Task<FalconRequestResult<List<EvaluationLogic>>> GetVulnerabilityEvaluationLogicAsync()
+    {
+        var result = new FalconRequestResult<List<EvaluationLogic>>();
+        try
+        {
+            var accessToken = await _authService.GetAccessTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var url = $"{_options.BaseUrl}/spotlight/entities/evaluation-logic/v1";
+            var response = await _httpClient.GetAsync(url);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            result.RawResponse = responseBody;
+
+            if (ApiErrorHelper.LogAndCheckForApiErrors(_logger, responseBody, "Spotlight API"))
+                result.ErrorMessage = "API-level error found in response.";
+
+            response.EnsureSuccessStatusCode();
+            var parsed = JsonSerializer.Deserialize<PaginatedResponse<EvaluationLogic>>(responseBody);
+            result.Data = parsed?.Resources ?? new List<EvaluationLogic>();
+            result.StatusCode = System.Net.HttpStatusCode.OK;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "🔥 Exception in GetVulnerabilityEvaluationLogicAsync");
+            result.StatusCode = System.Net.HttpStatusCode.InternalServerError;
+            result.Exception = ex;
+        }
+        return result;
+    }
 }
