@@ -17,11 +17,26 @@ namespace ZentrixLabs.FalconSdk.Services;
 /// </summary>
 public class AlertService
 {
+    /// <summary>
+    /// The HTTP client used to make requests to the CrowdStrike API.
+    /// /// </summary>
     private readonly HttpClient _httpClient;
+    /// <summary>
+    /// The authentication service used to obtain access tokens for API requests.
+    /// </summary>
     private readonly CrowdStrikeAuthService _authService;
+    /// <summary>
+    /// The options containing configuration settings for the CrowdStrike API.
+    /// </summary>
     private readonly CrowdStrikeOptions _options;
+    /// <summary>
+    /// The logger used for logging information and errors.
+    /// </summary>
     private readonly ILogger<AlertService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AlertService"/> class.
+    /// </summary>
     public AlertService(
         HttpClient httpClient,
         CrowdStrikeAuthService authService,

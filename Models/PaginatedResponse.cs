@@ -18,12 +18,21 @@ public class PaginatedResponse<T>
     public List<ApiError>? Errors { get; set; }
 }
 
+
+/// <summary>
+/// Represents metadata for a paginated response.
+/// Contains pagination information such as next token and total items.
+/// </summary>
 public class Meta
 {
     [JsonPropertyName("pagination")]
     public Pagination? Pagination { get; set; }
 }
 
+/// <summary>
+/// Represents pagination information in the API response.
+/// Contains the next token for fetching additional pages and the total number of items.
+/// </summary>
 public class Pagination
 {
     [JsonPropertyName("next_token")]
