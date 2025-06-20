@@ -20,14 +20,23 @@ A lightweight, MIT-licensed .NET 9 SDK for querying CrowdStrike Falcon data usin
 
 - 🔌 Supported API Endpoints
 
-| **Purpose**               | **Falcon API Endpoint**                              |
-|---------------------------|------------------------------------------------------|
-| Device search             | `/devices/queries/devices/v1`                        |
-| Device details            | `/devices/entities/devices/v2`                       |
-| Host groups               | `/devices/entities/host-groups/v1`                   |
-| Vulnerabilities by filter | `/spotlight/queries/vulnerabilities/v1`              |
-| Vulnerabilities by ID     | `/spotlight/entities/vulnerabilities/v1`             |
+| **Purpose**                      | **Falcon API Endpoint**                                   |
+|-----------------------------------|-----------------------------------------------------------|
+| Device search                     | `/devices/queries/devices/v1`                             |
+| Device details                    | `/devices/entities/devices/v2`                            |
+| Host groups                       | `/devices/entities/host-groups/v1`                        |
+| Vulnerabilities by filter         | `/spotlight/queries/vulnerabilities/v1`                   |
+| Vulnerabilities by ID             | `/spotlight/entities/vulnerabilities/v1`                  |
+| Vulnerability hosts               | `/spotlight/combined/hosts/v1`                            |
+| Vulnerability remediations        | `/spotlight/combined/remediations/v1`                     |
+| Vulnerability counts              | `/spotlight/queries/vulnerabilities/v1`                   |
+| Vulnerability host counts         | `/spotlight/queries/hosts/v1`                             |
+| Vulnerability remediation counts  | `/spotlight/queries/remediations/v1`                      |
+| Vulnerability evaluation logic    | `/spotlight/entities/evaluation-logic/v1`                 |
+| Alerts search (IDs)               | `/alerts/queries/alerts/v1`                               |
+| Alert details                     | `/alerts/entities/alerts/v2`                              |
 
+---
 
 🚧 Not yet implemented:
 - Streaming detections or real-time event subscriptions  
@@ -47,13 +56,12 @@ You need:
   - **Host Groups: Read**
   - **Assets: Read**
   - **Vulnerabilities: Read**
+  - **Alerts: Read**
 
 You can create an API key with these permissions in the Falcon console
 
 ## 🛠️ Notes
-- Pagination: Some endpoints (e.g., devices/queries) require handling of scroll tokens for pagination.
-  - Example: `/devices/queries/devices-scroll/v1?filter=hostname:'<devicename>'` for paginated device queries.
-  
+- Pagination: Some endpoints (e.g., devices/queries, spotlight, alerts) require handling of scroll tokens or next tokens for pagination.
 - The user creating the key must have the necessary permissions to grant these scopes (Vulnerability Manager, Device Control, etc.)
 
 ## 🔑 Setting Up Your API Key
@@ -80,6 +88,16 @@ var token = await auth.GetTokenAsync();
 var deviceService = new CrowdStrikeDeviceService(auth);
 var deviceIds = await deviceService.GetDeviceIdsAsync();
 var devices = await deviceService.GetDeviceDetailsAsync(deviceIds);
+
+// Spotlight Example
+var spotlightService = new CrowdStrikeSpotlightService(httpClient, auth, options, logger);
+var vulnIds = await spotlightService.GetVulnerabilityIdsForHostAsync("host-aid");
+var vulnDetails = await spotlightService.GetVulnerabilityDetailsAsync("host-aid", vulnIds.Data);
+
+// Alerts Example
+var alertService = new AlertService(httpClient, auth, options, logger);
+var alertIds = await alertService.GetAlertIdsAsync();
+var alertDetails = await alertService.GetAlertDetailsAsync(alertIds.Data);
 ```
 
 ---
@@ -139,4 +157,4 @@ This Sdk will continue to evolve to encompass more features and services from th
 
 If you'd like to support this project:
 
-[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/default-orange.png)](https://www.buymeacoffee.com/Mainframe79)
+[![Buy Me A Coffee](Docs/coffee.png)](https://www.buymeacoffee.com/Mainframe79)
