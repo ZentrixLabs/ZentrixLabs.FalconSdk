@@ -5,6 +5,7 @@ using ZentrixLabs.FalconSdk.Models;
 using ZentrixLabs.FalconSdk.Configuration;
 using System.Net.Http.Json;
 using ZentrixLabs.FalconSdk.Helpers;
+using System.Text.Json;
 
 namespace ZentrixLabs.FalconSdk.Services;
 
